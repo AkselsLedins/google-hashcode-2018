@@ -38,8 +38,14 @@ class Ride {
     this.startY = startY;
     this.endX = endX;
     this.endY = endY;
+    this.duration = getDistance([ this.startX, this.startY ], [this.endX, this.endY])
     this.startTime = startTime;
     this.endTime = endTime;
+    this.done = false;
+  }
+
+  distanceFromVehicule(vehicule) {
+    return getDistance([ vehicule.x, vehicule.y ], [this.startX, this.startY]);
   }
 }
 
@@ -47,14 +53,45 @@ class Vehicle {
   constructor() {
     this.x = 0;
     this.y = 0;
-    this.isFree = true;
-    this.trips = [];    
+    this.finishAt = 0;
+    this.rides = [];
+
+    this.nextX = null;
+    this.nextY = null;
+    this.stepsRemaining = null;
+  }
+
+  assign(ride, currentStep) {
+    this.nextX = ride.startX;
+    this.nextY = ride.startY;
+    this.finishAt = currentStep + this.distanceFromRide(ride) + this.ride.duration;
+  }
+
+  distanceFromRide(ride) {
+    return getDistance([ this.x, this.y ], [ride.startX, ride.startY]);
+  }
+
+  isFreeAtStep(currentStep) {
+    return this.isFreeAtStep <= currentStep;
   }
 }
 
-function main() {
-  var arr = [];
+// qui retourne le nombre de step au passage
+function getDistance([x, y], [x2, y2]) {
+  return Math.abs(x - x2) + Math.abs(y - y2);
+}
 
+function rankDriver(Vehicle, Ride) {
+  if (!Vehicle.isFree) return Infinity;
+  return getDistance([ Vehicle.x, Vehicle.y ], [ Ride.startX, Ride.startY ]);
+}
+
+// Course triée par heure de départ
+const sortRidesByStartTime = rides => _.sortBy(rides, ride => ride.startTime)
+
+const getFreeVehicles = vehicles => _.filter(vehicles, v => v.isFree)
+
+function main() {
   // File format
   // The first line of the input file contains the following integer numbers separated by single spaces:
   // ● R – number of rows of the grid (1 ≤ R ≤ 10000)
@@ -78,15 +115,24 @@ function main() {
   //   arr[arr_i] = arr[arr_i].map(Number);
   // }
 
-  console.log('rides', rides)
+  let sortedRides = sortRidesByStartTime(rides)
+  sortedRides = sortedRides.reverse();
+  const vehicles = [...Array(numberOfVehicules).keys()].map(() => new Vehicle());
+
+  console.log('rides', sortedRides);
+  console.log('vehicles', vehicles);
+
+  for (let step = 0; sortedRides.length > 0; step++) {
+
+    // trouver les driver libres
+    const freeDrivers = getFreeVehicles(vehicles);
+    const numberOfFreeDriver = freeDrivers.length;
+
+    for(let i = 0; i < numberOfFreeDriver; i++) {
+      const nextRide = sortedRides.pop();
+      const driversSortedByDistancesAndStatus = _.sortBy(freeDrivers, driver => rankDriver(rider, nextRide));
+
+      driversSortedByDistancesAndStatus[0].assign(nextRide, step);
+    }
+  }
 }
-
-// getDistance([x, y], [x, y])
-function getDistance([x, y], [x2, y2]) {
-  return Math.abs(x - x2) + Math.abs(y - y2);
-}
-
-
-
-// Course triée par heure de départ
-// const ridesSortedByStartTime = _.sort(rides,, )
