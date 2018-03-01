@@ -74,7 +74,11 @@ class Vehicle {
     if (debug()) console.log('@assign to', this.id, ' : ', ride.id, '(', this.isFreeAtStep(currentStep)  ,')');
     this.nextX = ride.startX;
     this.nextY = ride.startY;
-    this.finishAt = currentStep + this.distanceFromRide(ride) + ride.duration;
+
+    this.finishAt = Math.max(
+      ride.startTime,
+      currentStep + this.distanceFromRide(ride)
+    ) + ride.duration;
     this.rides.push(ride)
   }
 
