@@ -48,11 +48,15 @@ class Ride {
 
     this.maxStartTime = endTime - this.duration;
 
-    this.done = false;
+    this.assigned = false;
   }
 
-  distanceFromVehicule(vehicule) {
-    return getDistance([ vehicule.x, vehicule.y ], [this.startX, this.startY]);
+  distanceFromVehicule(vehicle) {
+    return getDistance([ vehicle.x, vehicle.y ], [this.startX, this.startY]);
+  }
+
+  distance() {
+    return getDistance([this.endX, this.endY], [this.startX, this.startY])
   }
 }
 
@@ -72,6 +76,7 @@ class Vehicle {
 
   assign(ride, currentStep) {
     if (debug()) console.log('@assign to', this.id, ' : ', ride.id, '(', this.isFreeAtStep(currentStep)  ,')');
+    ride.assigned = true;
     this.nextX = ride.startX;
     this.nextY = ride.startY;
 
@@ -79,7 +84,7 @@ class Vehicle {
       ride.startTime,
       currentStep + this.distanceFromRide(ride)
     ) + ride.duration;
-    this.rides.push(ride)
+    this.rides.push(ride);
   }
 
   distanceFromRide(ride) {
@@ -99,40 +104,28 @@ class Vehicle {
 function getDistance([x, y], [x2, y2]) {
   return Math.abs(x - x2) + Math.abs(y - y2);
 }
+function rankDriver(vehicle, ride, stepNumber) {
+  // driver pas dispo
+  if (!vehicle.isFreeAtStep(stepNumber)) return Infinity;
+  // distance vers le point de depart
+  const distance = vehicle.distanceFromRide(ride);
+  // on peut au maximum commencer à maintenant + distance qui nous sépare du point
+  const minStartTime = stepNumber + distance;
+  // on va attendre peut-être
+  const waitTime = Math.min(0, ride.maxStartTime - minStartTime);
 
-function rankDriver(Vehicle, Ride, stepNumber) {
-  if (!Vehicle.isFreeAtStep(stepNumber)) return Infinity;
-  const distance = getDistance([ Vehicle.x, Vehicle.y ], [ Ride.startX, Ride.startY ]);
-  if (Ride.maxStartTime < stepNumber + distance) return Infinity;
-  return distance;
+  if (ride.maxStartTime < minStartTime) return Infinity;
+  return distance + waitTime;
 }
 
-// Course triée par heure de départ
+// Courses triées par heure de départ
 const sortRidesByStartTime = rides => _.sortBy(rides, ride => ride.startTime)
-
+const sortRidesByDistance = rides => _.sortBy(rides, ride => ride.distance).reverse();
 const getFreeVehicles = (vehicles, currentStep) => _.filter(vehicles, v => v.isFreeAtStep(currentStep))
 
-function main() {
-  // File format
-  // The first line of the input file contains the following integer numbers separated by single spaces:
-  // ● R – number of rows of the grid (1 ≤ R ≤ 10000)
-  // ● C – number of columns of the grid (1 ≤ C ≤ 10000)
-  // ● F – number of vehicles in the fleet (1 ≤ F ≤ 1000)
-  // ● N – number of rides (1 ≤ N ≤ 10000)
-  // ● B – per-ride bonus for starting the ride on time (1 ≤ B ≤ 10000)
-  // ● T – number of steps in the simulation (1 ≤ T ≤ 10 )
-  const [ rows, columns, numberOfVehicules, numberOfRides, bonus, numberOfSteps ] = readLine().split(' ');
-
-  const params = { rows, columns, numberOfVehicules, numberOfRides, bonus, numberOfSteps }
-
-  const rides = [];
-  for (i = 0; i < numberOfRides; i++) {
-    rides[i] = new Ride(i, ...readLine().split(' '));
-  }
-
-  let sortedRides = sortRidesByStartTime(rides)
+function solution1(rides, vehicles) {
+  let sortedRides = sortRidesByStartTime(rides);
   sortedRides = sortedRides.reverse();
-  const vehicles = _.range(numberOfVehicules).map((id) => new Vehicle(id));
 
   for (let step = 0; sortedRides.length > 0; step++) {
     // trouver les driver libres
@@ -147,6 +140,42 @@ function main() {
       if (sortedRides.length === 0) break;
     }
   }
+}
+
+function solution2(rides, vehicles) {
+  for (let i = 0; i < vehicles.length; i++) {
+    const vehicle = vehicles[i];
+
+    while(true) {
+      // on chercher la course la plus proche..
+      const rideNotTakenAndInTheFuture = _.filter(rides, ride => {
+        return !ride.assigned && vehicle.canDoRide(ride, vehicle.finishAt);
+      })
+
+      const rideNotTakenAndInTheFutureSorted = _.sortBy(rideNotTakenAndInTheFuture, ride => {
+        return vehicle.distanceFromRide(ride);
+      });
+
+      if (_.isEmpty(rideNotTakenAndInTheFutureSorted)) {
+        break;
+      }
+
+      // ...on l'assigne
+      vehicle.assign(rideNotTakenAndInTheFutureSorted[0], vehicle.finishAt);
+    }
+  }
+}
+
+
+function main() {
+  const [ rows, columns, numberOfVehicules, numberOfRides, bonus, numberOfSteps ] = readLine().split(' ');
+
+  const params = { rows, columns, numberOfVehicules, numberOfRides, bonus, numberOfSteps }
+
+  const rides = _.range(numberOfRides).map((id) => new Ride(id, ...readLine().split(' ')));
+  const vehicles = _.range(numberOfVehicules).map((id) => new Vehicle(id));
+
+  solution2(rides, vehicles);
 
   vehicles.forEach((v, i) => {
     // console.log()
