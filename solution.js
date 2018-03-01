@@ -106,20 +106,14 @@ function main() {
 
   const params = { rows, columns, numberOfVehicules, numberOfRides, bonus, numberOfSteps }
 
-  // console.log('R', R);
-
   const rides = [];
   for (i = 0; i < numberOfRides; i++) {
     rides[i] = new Ride(i, ...readLine().split(' '));
   }
 
-  // for(arr_i = 0; arr_i < 6; arr_i++) {
-  //   arr[arr_i] = arr[arr_i].map(Number);
-  // }
-
   let sortedRides = sortRidesByStartTime(rides)
   sortedRides = sortedRides.reverse();
-  const vehicles = [...Array(numberOfVehicules).keys()].map(() => new Vehicle());
+  const vehicles = _.range(numberOfVehicules).map(() => new Vehicle());
 
   for (let step = 0; sortedRides.length > 0; step++) {
     // trouver les driver libres
@@ -131,12 +125,13 @@ function main() {
       const driversSortedByDistancesAndStatus = _.sortBy(freeDrivers, rider => rankDriver(rider, nextRide));
 
       driversSortedByDistancesAndStatus[0].assign(nextRide, step);
+      if (sortedRides.length === 0) break;
     }
   }
 
   vehicles.forEach((v, i) => {
     // console.log()
-    const result = `${i} ${v.rides.map(r => r.id).join(' ')}`;
+    const result = `${v.rides.length} ${v.rides.map(r => r.id).join(' ')}`;
     console.log(result);
   });
 }
