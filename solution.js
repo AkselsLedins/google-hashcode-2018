@@ -33,7 +33,8 @@ function readLine() {
 // ● f – the latest finish (0 ≤ f ≤ T) , (f ≥ s + |x − a| + |y − b|)
 // ○ note that f can be equal to T – this makes the latest finish equal to the end of the simulation
 class Ride {
-  constructor(startX, startY, endX, endY, startTime, endTime) {
+  constructor(id, startX, startY, endX, endY, startTime, endTime) {
+    this.id = id;
     this.startX = startX;
     this.startY = startY;
     this.endX = endX;
@@ -64,7 +65,8 @@ class Vehicle {
   assign(ride, currentStep) {
     this.nextX = ride.startX;
     this.nextY = ride.startY;
-    this.finishAt = currentStep + this.distanceFromRide(ride) + this.ride.duration;
+    this.finishAt = currentStep + this.distanceFromRide(ride) + ride.duration;
+    this.rides.push(ride)
   }
 
   distanceFromRide(ride) {
@@ -72,7 +74,7 @@ class Vehicle {
   }
 
   isFreeAtStep(currentStep) {
-    return this.isFreeAtStep <= currentStep;
+    return this.finishAt <= currentStep;
   }
 }
 
@@ -89,7 +91,7 @@ function rankDriver(Vehicle, Ride) {
 // Course triée par heure de départ
 const sortRidesByStartTime = rides => _.sortBy(rides, ride => ride.startTime)
 
-const getFreeVehicles = vehicles => _.filter(vehicles, v => v.isFree)
+const getFreeVehicles = (vehicles, currentStep) => _.filter(vehicles, v => v.isFreeAtStep(currentStep))
 
 function main() {
   // File format
@@ -108,7 +110,7 @@ function main() {
 
   const rides = [];
   for (i = 0; i < numberOfRides; i++) {
-    rides[i] = new Ride(...readLine().split(' '));
+    rides[i] = new Ride(i, ...readLine().split(' '));
   }
 
   // for(arr_i = 0; arr_i < 6; arr_i++) {
@@ -119,20 +121,22 @@ function main() {
   sortedRides = sortedRides.reverse();
   const vehicles = [...Array(numberOfVehicules).keys()].map(() => new Vehicle());
 
-  console.log('rides', sortedRides);
-  console.log('vehicles', vehicles);
-
   for (let step = 0; sortedRides.length > 0; step++) {
-
     // trouver les driver libres
-    const freeDrivers = getFreeVehicles(vehicles);
+    const freeDrivers = getFreeVehicles(vehicles, step);
     const numberOfFreeDriver = freeDrivers.length;
 
     for(let i = 0; i < numberOfFreeDriver; i++) {
       const nextRide = sortedRides.pop();
-      const driversSortedByDistancesAndStatus = _.sortBy(freeDrivers, driver => rankDriver(rider, nextRide));
+      const driversSortedByDistancesAndStatus = _.sortBy(freeDrivers, rider => rankDriver(rider, nextRide));
 
       driversSortedByDistancesAndStatus[0].assign(nextRide, step);
     }
   }
+
+  vehicles.forEach((v, i) => {
+    // console.log()
+    const result = `${i} ${v.rides.map(r => r.id).join(' ')}`;
+    console.log(result);
+  });
 }
