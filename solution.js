@@ -32,12 +32,24 @@ function readLine() {
 // ● s – the earliest start(0 ≤ s < T)
 // ● f – the latest finish (0 ≤ f ≤ T) , (f ≥ s + |x − a| + |y − b|)
 // ○ note that f can be equal to T – this makes the latest finish equal to the end of the simulation
-function Ride(startX, startY, endX, endY, startTime, endTime) {
-  this.startX = startX;
-  this.startY = startY;
-  this.endX = endY;
-  this.startTime = startTime;
-  this.endTime = endTime;
+class Ride {
+  constructor(startX, startY, endX, endY, startTime, endTime) {
+    this.startX = startX;
+    this.startY = startY;
+    this.endX = endX;
+    this.endY = endY;
+    this.startTime = startTime;
+    this.endTime = endTime;
+  }
+}
+
+class Vehicle {
+  constructor() {
+    this.x = 0;
+    this.y = 0;
+    this.isFree = true;
+    this.trips = [];    
+  }
 }
 
 function main() {
